@@ -1,6 +1,8 @@
 import math
 import time
 import numpy as np
+import utils
+import torch
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
     model.train()
@@ -52,19 +54,21 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
 
     return metric_logger
 
-def evaluate_compute_batch_ap(model, data_loader_test, device='cpu'):
-    cpu_device = torch.device("cpu")
+def evaluate_compute_batch_ap(model, data_loader_test, device):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Test:"
     APs = []
     for images, targets in metric_logger.log_every(data_loader_test, 100, header):
+        images = list(image.to(device) for image in images)
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        
         model_time = time.time()
-        prediction = model(image)
+        prediction = model(images)
         
         #parameters
-        gt_boxes = target[0]['boxes']
-        gt_class_ids = target[0]['labels']
+        gt_boxes = targets[0]['boxes']
+        gt_class_ids = targets[0]['labels']
         pred_boxes = prediction[0]['boxes']
         pred_scores = prediction[0]['scores']
         pred_class_ids = prediction[0]['labels']
@@ -127,11 +131,11 @@ def compute_ap(gt_boxes, gt_class_ids,
     """
     # Trim zero padding and sort predictions by score from high to low
     # TODO: cleaner to do zero unpadding upstream
-    gt_boxes       = gt_boxes.detach().numpy()
-    gt_class_ids   = gt_class_ids.detach().numpy()
-    pred_boxes     = pred_boxes.detach().numpy()
-    pred_class_ids = pred_class_ids.detach().numpy()
-    pred_scores    = pred_scores.detach().numpy()
+    gt_boxes       = gt_boxes.detach().cpu().numpy()
+    gt_class_ids   = gt_class_ids.detach().cpu().numpy()
+    pred_boxes     = pred_boxes.detach().cpu().numpy()
+    pred_class_ids = pred_class_ids.detach().cpu().numpy()
+    pred_scores    = pred_scores.detach().cpu().numpy()
     
     indices        = np.argsort(pred_scores)[::-1]
     pred_boxes     = pred_boxes[indices]
