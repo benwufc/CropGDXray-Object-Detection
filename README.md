@@ -53,11 +53,19 @@ from engine import train_one_epoch
 train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
 ```
 
-## Evaluation
+# Evaluation
 
 ```
 from engine import train_one_epoch
 
 APs = evaluate_compute_batch_ap(model, data_loader_test, device=device)
+```
+
+# Visualization
+
+```
+import visualize
+
+visualize.display_instances(img, target['boxes'], figsize=(8, 8))
 ```
 
